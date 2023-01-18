@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+    postgres:
+        image: postgres:15.1-alpine
+        container_name: postgres
+        restart: always
+        volumes:
+            - postgres_volume:/var/lib/postgresql/data
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_DB=postgres
+        ports:
+            - "5431:5432"
+    server:
+        container_name: adonis_app
+        build:
+            context: .
+            target: dependencies
+        restart: always
+        depends_on:
+            - postgres
+        ports:
+            - "${PORT}:${PORT}"
+        env_file:
+            - .env
+        environment:
+            - PG_CONNECTION=pg
+            - PG_HOST=postgres
+            - PG_PORT=5432
+            - PG_USER=postgres
+            - PG_PASSWORD=postgres
+            - PG_DB_NAME=postgres
+        volumes:
+            - ./:/home/node/app
+            - /home/node/app/node_modules
+        command: >
+            sh -c "node ace migration:refresh --seed
+            && dumb-init node ace serve --watch"
+volumes:
+    postgres_volume:
